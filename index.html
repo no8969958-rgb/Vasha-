@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ভাষা - ইংলিশ লার্নিং প্রো (Final Fixed Version)</title>
+    <title>ভাষা - ইংলিশ লার্নিং প্রো (Absolute Final Version)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -456,7 +456,6 @@
             return weekdays[new Date().getDay()];
         }
 
-        // স্টাডি টাইম ট্র্যাকিং (কমপক্ষে ১ মিনিট পূর্ণ হলে সেভ হবে এবং প্রতি ১ মিনিট পর পর অটো সেভ হবে)
         let studyStartTime = Date.now();
         function recordStudyTime() {
             let diffMs = Date.now() - studyStartTime;
@@ -466,12 +465,11 @@
                 if (!userData.studyTimeMap) userData.studyTimeMap = {};
                 userData.studyTimeMap[todayDay] = (userData.studyTimeMap[todayDay] || 0) + durationMinutes;
                 localStorage.setItem('vasha_user_data', JSON.stringify(userData));
-                studyStartTime = Date.now(); // টাইমার রিসেট
+                studyStartTime = Date.now();
                 updateDashboardUI();
             }
         }
 
-        // প্রতি ১ মিনিট পরপর ব্যাকগ্রাউন্ডে সময় সেভ করার ইন্টারভাল
         setInterval(() => {
             recordStudyTime();
         }, 60000);
@@ -491,7 +489,6 @@
         let levelHasMistake = false;
         let currentPlayingLevel = 1;
 
-        // মাস্টার ওয়ার্ড ব্যাংক (১০০টি ইউনিক শব্দ)
         const masterWordBank = [
             { word: "Apple", emoji: "🍎", meaning: "আপেল", options: ["আম", "আপেল", "কলা"], correct: 1 },
             { word: "Water", emoji: "💧", meaning: "পানি", options: ["পানি", "আগুন", "বাতাস"], correct: 0 },
@@ -595,7 +592,6 @@
             { word: "Dream", emoji: "💭", meaning: "স্বপ্ন", options: ["বাস্তব", "স্বপ্ন", "স্মৃতি"], correct: 1 }
         ];
 
-        // ডেইলি চ্যালেঞ্জ পুল (৫টি প্রশ্ন)
         const dailyChallengePool = [
             { word: "Challenge", emoji: "🎯", meaning: "চ্যালেঞ্জ", options: ["পরীক্ষা", "চ্যালেঞ্জ", "খেলা"], correct: 1 },
             { word: "Brave", emoji: "🦁", meaning: "সাহসী", options: ["সাহসী", "ভীতু", "দুর্বল"], correct: 0 },
@@ -638,7 +634,6 @@
             }
         }
 
-        // ভুল ১ ফিক্স: ডেইলি চ্যালেঞ্জ শুরু করার সঠিক লজিক ও ফাংশন
         function tryStartDailyChallenge() {
             let timeDiff = Date.now() - (userData.lastChallengeTime || 0);
             if (timeDiff < oneDayMs) {
@@ -649,7 +644,7 @@
         }
 
         function startDailyChallenge() {
-            currentPlayingLevel = 999; // চ্যালেঞ্জ মোড নির্দেশক
+            currentPlayingLevel = 999;
             activeQuestionIndex = 0;
             failedQuestionsQueue = [];
             currentLevelQuestions = [...dailyChallengePool];
@@ -792,7 +787,6 @@
             });
         }
 
-        // ভুল ৪ক ফিক্স: অনবোর্ডিং স্ক্রিনে টপ-বার এবং বটম-নভ সম্পূর্ণ হাইড করা
         function hideTopAndBottomNav() {
             let topBar = document.getElementById('top-bar');
             let bottomNav = document.getElementById('bottom-nav');
@@ -1081,9 +1075,10 @@
                 };
             } else {
                 rewardTitle.innerText = "অভিনন্দন! সফলভাবে সব সংশোধন সম্পন্ন হয়েছে! 🎉";
-                rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে বোনাস কয়েন ও লেভেল আপ সংগ্রহ করুন।";
+                rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে বোনাস কয়েন সংগ্রহ করুন।";
+                
                 if (currentPlayingLevel === 999) {
-                    rewardActionBtn.innerText = "🎁 বোনাস কয়েন সংগ্রহ করুন (+১০ কয়েন)";
+                    rewardActionBtn.innerText = "🎁 বোনাস কয়েন (+১০ কয়েন)";
                 } else {
                     rewardActionBtn.innerText = "🎁 কয়েন সংগ্রহ করুন (+৩ কয়েন)";
                 }
@@ -1099,6 +1094,10 @@
             if (currentPlayingLevel === 999) {
                 userData.userCoins += 10;
                 userData.lastChallengeTime = Date.now();
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+                updateDashboardUI();
+                switchTab('home');
+                return;
             } else {
                 userData.userCoins += 3;
                 if (currentPlayingLevel === userData.currentLevel && userData.currentLevel < 100) {
@@ -1108,12 +1107,7 @@
 
             localStorage.setItem('vasha_user_data', JSON.stringify(userData));
             updateDashboardUI();
-            
-            if (currentPlayingLevel === 999) {
-                switchTab('home');
-            } else {
-                switchTab('word-mela');
-            }
+            switchTab('word-mela');
         }
 
         function exitLesson() {
