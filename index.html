@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ভাষা - ইংলিশ লার্নিং প্রো (Fresh Start & Study Time Tracker)</title>
+    <title>ভাষা - ইংলিশ লার্নিং প্রো (Final Fixed Version)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -222,7 +222,7 @@
             <div id="screen-word-mela" class="hidden space-y-3">
                 <div class="bg-gradient-to-r from-sky-600 to-teal-700 text-white p-3.5 rounded-2xl shadow">
                     <h3 class="font-bold text-base">শব্দ মেলা (১ থেকে ১০০ লেভেল) 🧩</h3>
-                    <p class="text-[11px] text-sky-100 font-medium">প্রতিটি লেভেলে ৫টি করে ১০০% ইউনিক প্রশ্ন রয়েছে[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)!</p>
+                    <p class="text-[11px] text-sky-100 font-medium">প্রতিটি লেভেলে ৫টি করে ১০০% ইউনিক প্রশ্ন রয়েছে!</p>
                 </div>
                 <div id="word-mela-grid" class="grid grid-cols-4 gap-2.5 pt-1"></div>
             </div>
@@ -266,7 +266,7 @@
                 </div>
             </div>
 
-            <!-- Profile (સ્પષ્ટ ও নিখুঁত নতুন ডিজাইন) -->
+            <!-- Profile -->
             <div id="screen-profile" class="hidden space-y-3">
                 <div class="bg-slate-900 text-white p-4 rounded-2xl text-center space-y-2 shadow-lg relative overflow-hidden">
                     <img src="https://i.ibb.co.com/V0H1kxTg/file-0000000052e08211864099d800de4aaa.png" alt="Avatar" class="w-16 h-16 rounded-full mx-auto border-2 border-slate-700 object-cover shadow">
@@ -289,16 +289,14 @@
                     </div>
                 </div>
 
-                <!-- বারের হিসাব ও শেখার সময় ট্র্যাকিং সেকশন (স্পষ্ট টেক্সট) -->
+                <!-- বারের হিসাব ও শেখার সময় ট্র্যাকিং সেকশন -->
                 <div class="bg-white border border-slate-200 p-3.5 rounded-2xl shadow-sm space-y-3">
                     <h4 class="font-bold text-xs text-slate-900 border-b pb-2 flex justify-between items-center">
-                        <span>📊 বারিভিত্তিক শেখার সময় (Time Tracker)</span>
+                        <span>বারিভিত্তিক শেখার সময় (Time Tracker)</span>
                         <span id="profile-current-day-badge" class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-bold">আজ: রবিবার</span>
                     </h4>
                     
-                    <div id="weekday-time-list" class="space-y-2 pt-1 text-xs">
-                        <!-- জাভাস্ক্রিপ্ট দিয়ে ডাইনামিক ফিল হবে -->
-                    </div>
+                    <div id="weekday-time-list" class="space-y-2 pt-1 text-xs"></div>
                 </div>
             </div>
 
@@ -426,7 +424,6 @@
         let nowTime = Date.now();
         let oneDayMs = 24 * 60 * 60 * 1000;
 
-        // জিরো থেকে শুরু এবং ডেটা স্ট্রাকচার ইনিশিয়ালাইজেশন
         if (!userData || typeof userData !== 'object') {
             userData = {
                 userName: "",
@@ -459,22 +456,29 @@
             return weekdays[new Date().getDay()];
         }
 
-        // শেখার সময় ট্র্যাকিং ভেরিয়েবল
+        // স্টাডি টাইম ট্র্যাকিং (কমপক্ষে ১ মিনিট পূর্ণ হলে সেভ হবে এবং প্রতি ১ মিনিট পর পর অটো সেভ হবে)
         let studyStartTime = Date.now();
-        window.addEventListener('beforeunload', () => {
-            recordStudyTime();
-        });
-
         function recordStudyTime() {
-            let durationMinutes = Math.round((Date.now() - studyStartTime) / 60000);
-            if (durationMinutes > 0) {
+            let diffMs = Date.now() - studyStartTime;
+            let durationMinutes = Math.floor(diffMs / 60000);
+            if (durationMinutes >= 1) {
                 let todayDay = getBanglaWeekday();
                 if (!userData.studyTimeMap) userData.studyTimeMap = {};
                 userData.studyTimeMap[todayDay] = (userData.studyTimeMap[todayDay] || 0) + durationMinutes;
                 localStorage.setItem('vasha_user_data', JSON.stringify(userData));
-                studyStartTime = Date.now(); // রিসেট
+                studyStartTime = Date.now(); // টাইমার রিসেট
+                updateDashboardUI();
             }
         }
+
+        // প্রতি ১ মিনিট পরপর ব্যাকগ্রাউন্ডে সময় সেভ করার ইন্টারভাল
+        setInterval(() => {
+            recordStudyTime();
+        }, 60000);
+
+        window.addEventListener('beforeunload', () => {
+            recordStudyTime();
+        });
 
         let currentTab = 'home';
         let userLives = userData.userLives;
@@ -487,7 +491,7 @@
         let levelHasMistake = false;
         let currentPlayingLevel = 1;
 
-        // ৬০০+ মাস্টার ইউনিক ওয়ার্ড ব্যাংক (১০০ লেভেলের প্রতিটিতে ৫টি করে ১০০% আলাদা প্রশ্ন)[span_4](start_span)[span_4](end_span)[span_5](start_span)[span_5](end_span)
+        // মাস্টার ওয়ার্ড ব্যাংক (১০০টি ইউনিক শব্দ)
         const masterWordBank = [
             { word: "Apple", emoji: "🍎", meaning: "আপেল", options: ["আম", "আপেল", "কলা"], correct: 1 },
             { word: "Water", emoji: "💧", meaning: "পানি", options: ["পানি", "আগুন", "বাতাস"], correct: 0 },
@@ -591,6 +595,15 @@
             { word: "Dream", emoji: "💭", meaning: "স্বপ্ন", options: ["বাস্তব", "স্বপ্ন", "স্মৃতি"], correct: 1 }
         ];
 
+        // ডেইলি চ্যালেঞ্জ পুল (৫টি প্রশ্ন)
+        const dailyChallengePool = [
+            { word: "Challenge", emoji: "🎯", meaning: "চ্যালেঞ্জ", options: ["পরীক্ষা", "চ্যালেঞ্জ", "খেলা"], correct: 1 },
+            { word: "Brave", emoji: "🦁", meaning: "সাহসী", options: ["সাহসী", "ভীতু", "দুর্বল"], correct: 0 },
+            { word: "Smart", emoji: "🧠", meaning: "বুদ্ধিমান", options: ["বোকা", "বুদ্ধিমান", "সরল"], correct: 1 },
+            { word: "Fast", emoji: "⚡", meaning: "দ্রুত", options: ["ধীর", "দ্রুত", "স্থির"], correct: 1 },
+            { word: "Win", emoji: "🏆", meaning: "জয়", options: ["জয়", "পরাজয়", "ড্র"], correct: 0 }
+        ];
+
         function getLevelQuestions(level) {
             let levelQs = [];
             let itemsPerLevel = 5;
@@ -625,12 +638,27 @@
             }
         }
 
+        // ভুল ১ ফিক্স: ডেইলি চ্যালেঞ্জ শুরু করার সঠিক লজিক ও ফাংশন
         function tryStartDailyChallenge() {
             let timeDiff = Date.now() - (userData.lastChallengeTime || 0);
             if (timeDiff < oneDayMs) {
                 showCustomAlert("⏳", "চ্যালেঞ্জ লকড রয়েছে!", "ডেইলি চ্যালেঞ্জ ২৪ ঘণ্টায় একবারই খেলা যায়!");
                 return;
             }
+            startDailyChallenge();
+        }
+
+        function startDailyChallenge() {
+            currentPlayingLevel = 999; // চ্যালেঞ্জ মোড নির্দেশক
+            activeQuestionIndex = 0;
+            failedQuestionsQueue = [];
+            currentLevelQuestions = [...dailyChallengePool];
+            levelHasMistake = false;
+            hideAllScreens();
+            document.getElementById('top-bar').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.add('hidden');
+            document.getElementById('screen-lesson-quiz').classList.remove('hidden');
+            loadQuestion();
         }
 
         function renderWordMelaGrid() {
@@ -692,11 +720,9 @@
             document.getElementById('current-weekday-text').innerText = banglaWeekday;
             document.getElementById('profile-current-day-badge').innerText = `আজ: ${banglaWeekday}`;
 
-            // আজকের শেখার সময় দেখান
             let todayMinutes = userData.studyTimeMap[banglaWeekday] || 0;
             document.getElementById('today-study-time-text').innerText = todayMinutes + " মিনিট";
 
-            // প্রোফাইলে সপ্তাহের বারিভিত্তিক সময় স্পষ্ট রেন্ডার করা
             renderWeekdayTimeList();
             checkDailyChallengeStatus();
         }
@@ -766,10 +792,22 @@
             });
         }
 
+        // ভুল ৪ক ফিক্স: অনবোর্ডিং স্ক্রিনে টপ-বার এবং বটম-নভ সম্পূর্ণ হাইড করা
+        function hideTopAndBottomNav() {
+            let topBar = document.getElementById('top-bar');
+            let bottomNav = document.getElementById('bottom-nav');
+            topBar.classList.add('hidden');
+            topBar.classList.remove('flex');
+            bottomNav.classList.add('hidden');
+            bottomNav.classList.remove('flex');
+        }
+
         function goToNameInputScreen() {
             hideAllScreens();
+            hideTopAndBottomNav();
             document.getElementById('screen-name-input').classList.remove('hidden');
         }
+
         function saveUserNameAndProceed() {
             let inputName = document.getElementById('user-name-input').value.trim();
             if (!inputName) {
@@ -783,45 +821,58 @@
             localStorage.setItem('vasha_user_data', JSON.stringify(userData));
             goToWelcomeScreen();
         }
+
         function goToWelcomeScreen() {
             hideAllScreens();
+            hideTopAndBottomNav();
             document.getElementById('screen-welcome').classList.remove('hidden');
         }
+
         function goToLanguageScreen() {
             hideAllScreens();
+            hideTopAndBottomNav();
             document.getElementById('screen-language').classList.remove('hidden');
         }
+
         function completeOnboarding() {
             userData.onboardingDone = true;
             localStorage.setItem('vasha_user_data', JSON.stringify(userData));
             goToDashboard();
         }
+
         function goToDashboard() {
             userData.onboardingDone = true;
             localStorage.setItem('vasha_user_data', JSON.stringify(userData));
             hideAllScreens();
             document.getElementById('screen-home').classList.remove('hidden');
-            document.getElementById('top-bar').classList.remove('hidden');
-            document.getElementById('top-bar').classList.add('flex');
-            document.getElementById('bottom-nav').classList.remove('hidden');
-            document.getElementById('bottom-nav').classList.add('flex');
+            
+            let topBar = document.getElementById('top-bar');
+            let bottomNav = document.getElementById('bottom-nav');
+            topBar.classList.remove('hidden');
+            topBar.classList.add('flex');
+            bottomNav.classList.remove('hidden');
+            bottomNav.classList.add('flex');
+
             updateDashboardUI();
             renderWordMelaGrid();
             switchTab('home');
         }
 
         function switchTab(tab) {
-            recordStudyTime(); // ট্যাব পরিবর্তন করার সময় সময় রেকর্ড হবে
+            recordStudyTime();
             currentTab = tab;
             hideAllScreens();
             ['home', 'word-mela', 'leaderboard', 'shop', 'profile'].forEach(t => {
                 const btn = document.getElementById(`nav-btn-${t}`);
                 if(btn) btn.className = `flex flex-col items-center ${t === tab ? 'text-sky-600 font-bold' : 'text-slate-500'}`;
             });
-            document.getElementById('top-bar').classList.remove('hidden');
-            document.getElementById('top-bar').classList.add('flex');
-            document.getElementById('bottom-nav').classList.remove('hidden');
-            document.getElementById('bottom-nav').classList.add('flex');
+            
+            let topBar = document.getElementById('top-bar');
+            let bottomNav = document.getElementById('bottom-nav');
+            topBar.classList.remove('hidden');
+            topBar.classList.add('flex');
+            bottomNav.classList.remove('hidden');
+            bottomNav.classList.add('flex');
 
             if (tab === 'home') document.getElementById('screen-home').classList.remove('hidden');
             if (tab === 'word-mela') { document.getElementById('screen-word-mela').classList.remove('hidden'); renderWordMelaGrid(); }
@@ -849,7 +900,13 @@
             targetWordElem.innerText = q.word;
             targetWordElem.setAttribute('data-word', q.word);
             document.getElementById('quiz-emoji').innerText = q.emoji;
-            document.getElementById('quiz-level-indicator').innerText = `লেভেল ${currentPlayingLevel} - প্রশ্ন ${activeQuestionIndex + 1}/${currentLevelQuestions.length}`;
+            
+            if (currentPlayingLevel === 999) {
+                document.getElementById('quiz-level-indicator').innerText = `ডেইলি চ্যালেঞ্জ - প্রশ্ন ${activeQuestionIndex + 1}/${currentLevelQuestions.length}`;
+            } else {
+                document.getElementById('quiz-level-indicator').innerText = `লেভেল ${currentPlayingLevel} - প্রশ্ন ${activeQuestionIndex + 1}/${currentLevelQuestions.length}`;
+            }
+            
             document.getElementById('quiz-lives').innerText = userLives;
             
             const progressPercent = ((activeQuestionIndex + 1) / currentLevelQuestions.length) * 100;
@@ -1016,32 +1073,56 @@
                 rewardDesc.innerText = "আপনি ভুল করেছিলেন কিন্তু সংশোধন সম্পন্ন করেননি। তাই কয়েন দেওয়া হয়নি।";
                 rewardActionBtn.innerText = "এগিয়ে চলুন ➔";
                 rewardActionBtn.onclick = () => {
-                    switchTab('word-mela');
+                    if (currentPlayingLevel === 999) {
+                        switchTab('home');
+                    } else {
+                        switchTab('word-mela');
+                    }
                 };
             } else {
                 rewardTitle.innerText = "অভিনন্দন! সফলভাবে সব সংশোধন সম্পন্ন হয়েছে! 🎉";
                 rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে বোনাস কয়েন ও লেভেল আপ সংগ্রহ করুন।";
-                rewardActionBtn.innerText = "🎁 কয়েন সংগ্রহ করুন (+৩ কয়েন)";
+                if (currentPlayingLevel === 999) {
+                    rewardActionBtn.innerText = "🎁 বোনাস কয়েন সংগ্রহ করুন (+১০ কয়েন)";
+                } else {
+                    rewardActionBtn.innerText = "🎁 কয়েন সংগ্রহ করুন (+৩ কয়েন)";
+                }
                 rewardActionBtn.onclick = claimCoins;
             }
             document.getElementById('screen-reward').classList.remove('hidden');
         }
 
         function claimCoins() {
-            recordStudyTime(); // কয়েন নেওয়ার সময় সময় যোগ হবে
+            recordStudyTime();
             playSound('coin');
-            userData.userCoins += 3;
-            if (currentPlayingLevel === userData.currentLevel && userData.currentLevel < 100) {
-                userData.currentLevel++;
+            
+            if (currentPlayingLevel === 999) {
+                userData.userCoins += 10;
+                userData.lastChallengeTime = Date.now();
+            } else {
+                userData.userCoins += 3;
+                if (currentPlayingLevel === userData.currentLevel && userData.currentLevel < 100) {
+                    userData.currentLevel++;
+                }
             }
+
             localStorage.setItem('vasha_user_data', JSON.stringify(userData));
             updateDashboardUI();
-            switchTab('word-mela');
+            
+            if (currentPlayingLevel === 999) {
+                switchTab('home');
+            } else {
+                switchTab('word-mela');
+            }
         }
 
         function exitLesson() {
             recordStudyTime();
-            switchTab('home');
+            if (currentPlayingLevel === 999) {
+                switchTab('home');
+            } else {
+                switchTab('word-mela');
+            }
         }
 
         function speakCurrentWord() {
