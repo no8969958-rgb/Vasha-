@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ভাষা - ইংলিশ লার্নিং প্রো (Absolute Final Version)</title>
+    <title>ভাষা - ইংলিশ লার্নিং প্রো (Active Study Tracker & Challenge Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -211,7 +211,7 @@
                     <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
                         <span class="text-2xl">⏱️</span>
                         <div>
-                            <p class="text-[10px] font-bold text-slate-500">আজ শেখার সময়</p>
+                            <p class="text-[10px] font-bold text-slate-500">সক্রিয় পড়ার সময়</p>
                             <p id="today-study-time-text" class="text-xs font-extrabold text-slate-800">০ মিনিট</p>
                         </div>
                     </div>
@@ -289,10 +289,10 @@
                     </div>
                 </div>
 
-                <!-- বারের হিসাব ও শেখার সময় ট্র্যাকিং সেকশন -->
+                <!-- বারের হিসাব ও সক্রিয় শেখার সময় ট্র্যাকিং সেকশন -->
                 <div class="bg-white border border-slate-200 p-3.5 rounded-2xl shadow-sm space-y-3">
                     <h4 class="font-bold text-xs text-slate-900 border-b pb-2 flex justify-between items-center">
-                        <span>বারিভিত্তিক শেখার সময় (Time Tracker)</span>
+                        <span>সক্রিয় পড়ার সময় (Active Study Time)</span>
                         <span id="profile-current-day-badge" class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-bold">আজ: রবিবার</span>
                     </h4>
                     
@@ -456,8 +456,17 @@
             return weekdays[new Date().getDay()];
         }
 
+        // সক্রিয় স্টাডি টাইম ট্র্যাকিং সিস্টেম (শুধু কুইজ/লেসন স্ক্রিনে থাকলেই সময় যোগ হবে)
+        let isActivelyStudying = false;
         let studyStartTime = Date.now();
-        function recordStudyTime() {
+
+        function startActiveStudyTimer() {
+            isActivelyStudying = true;
+            studyStartTime = Date.now();
+        }
+
+        function recordActiveStudyTime() {
+            if (!isActivelyStudying) return;
             let diffMs = Date.now() - studyStartTime;
             let durationMinutes = Math.floor(diffMs / 60000);
             if (durationMinutes >= 1) {
@@ -465,18 +474,17 @@
                 if (!userData.studyTimeMap) userData.studyTimeMap = {};
                 userData.studyTimeMap[todayDay] = (userData.studyTimeMap[todayDay] || 0) + durationMinutes;
                 localStorage.setItem('vasha_user_data', JSON.stringify(userData));
-                studyStartTime = Date.now();
+                studyStartTime = Date.now(); // টাইমার রিসেট
                 updateDashboardUI();
             }
         }
 
+        // প্রতি ১ মিনিট পর পর সক্রিয় পড়ার সময় সেভ হবে
         setInterval(() => {
-            recordStudyTime();
+            if (isActivelyStudying) {
+                recordActiveStudyTime();
+            }
         }, 60000);
-
-        window.addEventListener('beforeunload', () => {
-            recordStudyTime();
-        });
 
         let currentTab = 'home';
         let userLives = userData.userLives;
@@ -592,6 +600,7 @@
             { word: "Dream", emoji: "💭", meaning: "স্বপ্ন", options: ["বাস্তব", "স্বপ্ন", "স্মৃতি"], correct: 1 }
         ];
 
+        // ডেইলি চ্যালেঞ্জের জন্য সম্পূর্ণ আলাদা ৫টি ইউনিক প্রশ্ন সেট
         const dailyChallengePool = [
             { word: "Challenge", emoji: "🎯", meaning: "চ্যালেঞ্জ", options: ["পরীক্ষা", "চ্যালেঞ্জ", "খেলা"], correct: 1 },
             { word: "Brave", emoji: "🦁", meaning: "সাহসী", options: ["সাহসী", "ভীতু", "দুর্বল"], correct: 0 },
@@ -653,6 +662,7 @@
             document.getElementById('top-bar').classList.add('hidden');
             document.getElementById('bottom-nav').classList.add('hidden');
             document.getElementById('screen-lesson-quiz').classList.remove('hidden');
+            startActiveStudyTimer(); // স্টাডি টাইমার চালু
             loadQuestion();
         }
 
@@ -735,7 +745,7 @@
                 div.className = `flex justify-between items-center p-2 rounded-xl border ${isToday ? 'bg-sky-50 border-sky-300 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'}`;
                 div.innerHTML = `
                     <span class="flex items-center gap-1.5">📅 ${day} ${isToday ? '<span class="text-[9px] bg-sky-600 text-white px-1.5 py-0.2 rounded">আজ</span>' : ''}</span>
-                    <span class="font-extrabold text-sky-800">${mins} মিনিট শেখা হয়েছে</span>
+                    <span class="font-extrabold text-sky-800">${mins} মিনিট পড়া হয়েছে</span>
                 `;
                 container.appendChild(div);
             });
@@ -765,7 +775,7 @@
 
         function showStreakModal() {
             document.getElementById('streak-modal-details').innerHTML = `<p>🔥 ধারাবাহিকতা: ${userData.streakDays} দিন (২৪ ঘণ্টা পর পর স্বয়ংক্রিয় গণনা)</p>`;
-            document.getElementById('streak-modal').classList.remove('hidden');
+            document.getElementById('streak-modal').classList.add('hidden');
         }
         function closeStreakModal() {
             document.getElementById('streak-modal').classList.add('hidden');
@@ -853,7 +863,9 @@
         }
 
         function switchTab(tab) {
-            recordStudyTime();
+            recordActiveStudyTime(); // অন্য ট্যাবে গেলে বা ঘর থেকে বের হলে পড়ার সময় সেভ হবে
+            isActivelyStudying = false; // অলস বসে থাকার সময় কাউন্ট হবে না
+
             currentTab = tab;
             hideAllScreens();
             ['home', 'word-mela', 'leaderboard', 'shop', 'profile'].forEach(t => {
@@ -885,6 +897,7 @@
             document.getElementById('top-bar').classList.add('hidden');
             document.getElementById('bottom-nav').classList.add('hidden');
             document.getElementById('screen-lesson-quiz').classList.remove('hidden');
+            startActiveStudyTimer(); // লেসন শুরু হওয়ার সাথে সাথে সক্রিয় পড়া শুরু
             loadQuestion();
         }
 
@@ -1057,6 +1070,9 @@
         }
 
         function showRewardScreen() {
+            recordActiveStudyTime(); // লেসন শেষ হওয়ার পর সময় সেভ হবে
+            isActivelyStudying = false;
+
             hideAllScreens();
             const rewardActionBtn = document.getElementById('reward-action-btn');
             const rewardTitle = document.getElementById('reward-title');
@@ -1075,7 +1091,7 @@
                 };
             } else {
                 rewardTitle.innerText = "অভিনন্দন! সফলভাবে সব সংশোধন সম্পন্ন হয়েছে! 🎉";
-                rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে বোনাস কয়েন সংগ্রহ করুন।";
+                rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে কয়েন সংগ্রহ করুন।";
                 
                 if (currentPlayingLevel === 999) {
                     rewardActionBtn.innerText = "🎁 বোনাস কয়েন (+১০ কয়েন)";
@@ -1088,7 +1104,6 @@
         }
 
         function claimCoins() {
-            recordStudyTime();
             playSound('coin');
             
             if (currentPlayingLevel === 999) {
@@ -1111,7 +1126,8 @@
         }
 
         function exitLesson() {
-            recordStudyTime();
+            recordActiveStudyTime();
+            isActivelyStudying = false;
             if (currentPlayingLevel === 999) {
                 switchTab('home');
             } else {
