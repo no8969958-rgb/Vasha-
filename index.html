@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ভাষা - ইংলিশ লার্নিং প্রো (Fresh Start & Study Time Tracker)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            user-select: none;
+            overflow: auto;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        @keyframes popUp {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-popup {
+            animation: popUp 0.15s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="text-slate-100 flex justify-center items-center min-h-screen">
+
+    <script>
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'click') {
+                    osc.frequency.setValueAtTime(450, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+                    osc.start(now);
+                    osc.stop(now + 0.03);
+                } else if (type === 'correct') {
+                    osc.frequency.setValueAtTime(580, now);
+                    osc.frequency.setValueAtTime(880, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(160, now);
+                    osc.frequency.setValueAtTime(90, now + 0.12);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(750, now);
+                    osc.frequency.exponentialRampToValueAtTime(1300, now + 0.25);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.start(now);
+                    osc.stop(now + 0.28);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    </script>
+
+    <div id="app" class="w-full max-w-md bg-slate-50 text-slate-900 min-h-screen sm:h-[850px] sm:rounded-3xl shadow-2xl flex flex-col relative overflow-hidden border border-slate-700">
+        
+        <!-- Top Bar -->
+        <div id="top-bar" class="hidden bg-white/90 backdrop-blur-md px-4 py-3 border-b border-slate-200 justify-between items-center z-20 shrink-0 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-300 shadow-sm">
+                    <span class="text-amber-500 font-bold animate-pulse">🔥</span>
+                    <span id="streak-count" class="text-xs font-bold text-amber-800">১ দিন</span>
+                </div>
+                <div class="flex items-center gap-1 bg-yellow-50 px-3 py-1 rounded-full border border-yellow-300 shadow-sm">
+                    <span class="text-yellow-500">🪙</span>
+                    <span id="coin-count" class="text-xs font-bold text-yellow-800">০</span>
+                </div>
+                <div class="flex items-center gap-1 bg-rose-50 px-3 py-1 rounded-full border border-rose-300 shadow-sm">
+                    <span class="text-rose-500">❤️</span>
+                    <span id="life-count" class="text-xs font-bold text-rose-800">৫</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content" class="flex-1 overflow-y-auto relative p-4 space-y-3 pb-24">
+            
+            <!-- Name Input Screen -->
+            <div id="screen-name-input" class="hidden flex flex-col justify-between h-full py-6 text-center">
+                <div class="space-y-6 pt-4">
+                    <div class="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-5xl mx-auto shadow-inner animate-bounce">
+                        👋
+                    </div>
+                    <div class="space-y-2">
+                        <h2 class="text-xl font-extrabold text-slate-900">আপনার নাম লিখুন</h2>
+                        <p class="text-xs text-slate-500 font-medium">এই নামটি আপনার প্রোফাইল এবং লিডারবোর্ডে দেখানো হবে।</p>
+                    </div>
+                    <div class="px-2">
+                        <input type="text" id="user-name-input" placeholder="আপনার নাম এখানে লিখুন..." class="w-full px-4 py-3.5 bg-white border-2 border-emerald-500 rounded-2xl font-bold text-sm text-center text-slate-800 focus:outline-none shadow-sm">
+                    </div>
+                </div>
+                <button onclick="playSound('click'); saveUserNameAndProceed()" class="w-full py-4 bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold rounded-2xl shadow-lg transition text-base uppercase tracking-wider">
+                    শুরু করুন ➔
+                </button>
+            </div>
+
+            <!-- Welcome Screen -->
+            <div id="screen-welcome" class="hidden flex flex-col justify-between h-full py-4">
+                <div class="space-y-6">
+                    <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div class="bg-[#2ecc71] h-full w-1/4 transition-all duration-500"></div>
+                    </div>
+                    <div class="border-2 border-[#2ecc71] bg-white p-4 rounded-2xl shadow-sm relative mt-4">
+                        <p class="text-slate-900 font-bold text-base">Hi 👋 Vasha-তে আপনাকে স্বাগতম!</p>
+                    </div>
+                    <div class="flex flex-col items-center justify-center pt-12">
+                        <img src="https://i.ibb.co.com/V0H1kxTg/file-0000000052e08211864099d800de4aaa.png" alt="Mascot" class="w-44 h-44 object-contain animate-bounce">
+                    </div>
+                </div>
+                <button onclick="playSound('click'); goToLanguageScreen()" class="w-full py-4 bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold rounded-2xl shadow-lg transition transform active:scale-95 text-base uppercase tracking-wider">
+                    CONTINUE ➔
+                </button>
+            </div>
+
+            <!-- Language Screen -->
+            <div id="screen-language" class="hidden flex flex-col justify-between h-full py-4">
+                <div class="space-y-6">
+                    <div class="flex items-center gap-3">
+                        <button onclick="playSound('click'); goToWelcomeScreen()" class="text-slate-600 font-bold text-2xl">←</button>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-[#2ecc71] h-full w-2/4"></div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 mt-2">
+                        <img src="https://i.ibb.co.com/V0H1kxTg/file-0000000052e08211864099d800de4aaa.png" alt="Cat Mascot" class="w-20 h-20 object-contain shrink-0">
+                        <div class="border-2 border-slate-200 bg-white p-4 rounded-2xl shadow-sm w-full">
+                            <p class="font-bold text-slate-900 text-sm leading-relaxed">আপনি কোন ভাষা শিখতে চান?</p>
+                        </div>
+                    </div>
+                    <div class="pt-2 space-y-2">
+                        <p class="text-xs font-bold text-slate-600">একটি ভাষা নির্বাচন করুন:</p>
+                        <div class="border-2 border-[#2ecc71] bg-white p-4 rounded-2xl flex justify-between items-center cursor-pointer shadow-sm">
+                            <span class="font-bold text-sm flex items-center gap-3 text-slate-900"><span class="text-2xl">🇬🇧</span> ইংরেজি (English)</span>
+                            <span class="text-[#2ecc71] font-bold text-lg">✓</span>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="playSound('click'); completeOnboarding()" class="w-full py-4 bg-[#2ecc71] hover:bg-[#27ae60] text-white font-bold rounded-2xl shadow-lg transition text-base uppercase tracking-wider">
+                    CONTINUE ➔
+                </button>
+            </div>
+
+            <!-- Home Dashboard -->
+            <div id="screen-home" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-sky-600 to-indigo-700 text-white p-4 rounded-2xl shadow-lg space-y-1.5">
+                    <span class="bg-white/20 text-[10px] font-bold px-2.5 py-0.5 rounded-full">💡 কাস্টম নোটিশ</span>
+                    <p id="custom-notice-text" class="text-xs font-semibold leading-relaxed">"প্রতিটি লেভেলে সব প্রশ্নের সঠিক উত্তর দিয়ে কয়েন অর্জন করুন।"</p>
+                </div>
+
+                <div class="bg-white border border-slate-200 p-3.5 rounded-2xl shadow-sm space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="text-[10px] text-sky-700 font-bold bg-sky-100 px-2 py-0.5 rounded">চলতি লেসন</span>
+                            <h3 id="home-lesson-title" class="text-sm font-bold text-slate-900 mt-0.5">লেভেল ১: শব্দভাণ্ডার চর্চা</h3>
+                        </div>
+                        <span class="text-2xl">🚀</span>
+                    </div>
+                    <button onclick="playSound('click'); startLesson(userData.currentLevel)" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl shadow transition text-center text-xs">
+                        শেখা শুরু করুন (<span id="home-btn-level">লেভেল ১</span>)
+                    </button>
+                </div>
+
+                <div id="challenge-banner" onclick="tryStartDailyChallenge()" class="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-3.5 rounded-2xl shadow-md flex justify-between items-center cursor-pointer hover:opacity-95 transition">
+                    <div class="space-y-0.5">
+                        <span id="challenge-badge" class="bg-white/20 text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse">🔥 ২৪ ঘণ্টা চ্যালেঞ্জ</span>
+                        <h4 class="font-bold text-sm">ডেইলি চ্যালেঞ্জ টেস্ট</h4>
+                        <p id="challenge-desc" class="text-[11px] text-amber-100">আজকের চ্যালেঞ্জ শেষ করে পান বোনাস ১০ কয়েন!</p>
+                    </div>
+                    <span id="challenge-icon" class="text-2xl">🎯</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
+                        <span class="text-2xl">📅</span>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500">আজকের বার</p>
+                            <p id="current-weekday-text" class="text-xs font-extrabold text-slate-800">রবিবার</p>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
+                        <span class="text-2xl">⏱️</span>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-500">আজ শেখার সময়</p>
+                            <p id="today-study-time-text" class="text-xs font-extrabold text-slate-800">০ মিনিট</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Word Mela -->
+            <div id="screen-word-mela" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-sky-600 to-teal-700 text-white p-3.5 rounded-2xl shadow">
+                    <h3 class="font-bold text-base">শব্দ মেলা (১ থেকে ১০০ লেভেল) 🧩</h3>
+                    <p class="text-[11px] text-sky-100 font-medium">প্রতিটি লেভেলে ৫টি করে ১০০% ইউনিক প্রশ্ন রয়েছে[span_2](start_span)[span_2](end_span)[span_3](start_span)[span_3](end_span)!</p>
+                </div>
+                <div id="word-mela-grid" class="grid grid-cols-4 gap-2.5 pt-1"></div>
+            </div>
+
+            <!-- Leaderboard -->
+            <div id="screen-leaderboard" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-3.5 rounded-2xl shadow">
+                    <h3 class="font-bold text-base">লাইভ লিডারবোর্ড 🏆</h3>
+                    <p class="text-[11px] text-purple-100 font-medium">অন্যান্য লার্নারদের সাথে আপনার পজিশন দেখে নিন!</p>
+                </div>
+                <div id="leaderboard-list" class="space-y-2 pt-1"></div>
+            </div>
+
+            <!-- Shop -->
+            <div id="screen-shop" class="hidden space-y-3">
+                <div class="bg-gradient-to-r from-amber-500 to-yellow-600 text-white p-3.5 rounded-2xl shadow">
+                    <h3 class="font-bold text-base">রিওয়ার্ড শপ 🛍️</h3>
+                    <p class="text-[11px] text-amber-100 font-medium">আপনার জমানো কয়েন দিয়ে আকর্ষণীয় রিওয়ার্ড কিনুন!</p>
+                </div>
+                <div class="space-y-2.5 pt-1">
+                    <div class="bg-white border border-slate-200 p-3 rounded-2xl flex justify-between items-center shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-2xl">❤️</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-xs">প্লাস ২ লাইভ (হার্টস)</h4>
+                                <p class="text-[10px] text-slate-500">ভুল করলে লাইফ বাঁচাবে</p>
+                            </div>
+                        </div>
+                        <button onclick="buyShopItem('lives', 10)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-[11px] shadow">১০ 🪙</button>
+                    </div>
+                    <div class="bg-white border border-slate-200 p-3 rounded-2xl flex justify-between items-center shadow-sm">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-2xl">👑</span>
+                            <div>
+                                <h4 class="font-bold text-slate-900 text-xs">প্রো গোল্ড ব্যাজ</h4>
+                                <p class="text-[10px] text-slate-500">প্রোফাইলে স্পেশাল ব্যাজ</p>
+                            </div>
+                        </div>
+                        <button onclick="buyShopItem('badge', 25)" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-[11px] shadow">২৫ 🪙</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile (સ્પષ્ટ ও নিখুঁত নতুন ডিজাইন) -->
+            <div id="screen-profile" class="hidden space-y-3">
+                <div class="bg-slate-900 text-white p-4 rounded-2xl text-center space-y-2 shadow-lg relative overflow-hidden">
+                    <img src="https://i.ibb.co.com/V0H1kxTg/file-0000000052e08211864099d800de4aaa.png" alt="Avatar" class="w-16 h-16 rounded-full mx-auto border-2 border-slate-700 object-cover shadow">
+                    <h3 id="profile-name-text" class="font-bold text-base text-white">ব্যবহারকারী</h3>
+                    <div id="profile-badge-tag" class="inline-block bg-sky-500/20 text-sky-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-sky-500/30">
+                        ইংরেজি লার্নার প্রো
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div onclick="playSound('click'); showStreakModal()" class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-0.5 cursor-pointer hover:border-amber-400 transition">
+                        <span class="text-xl">🔥</span>
+                        <p class="text-[10px] font-bold text-slate-500">ধারাবাহিকতা (ট্যাপ করুন)</p>
+                        <p id="profile-streak" class="font-bold text-base text-slate-900">১ দিন</p>
+                    </div>
+                    <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm space-y-0.5">
+                        <span class="text-xl">⭐</span>
+                        <p class="text-[10px] font-bold text-slate-500">মোট এক্সপি</p>
+                        <p id="profile-xp" class="font-bold text-base text-slate-900">০ XP</p>
+                    </div>
+                </div>
+
+                <!-- বারের হিসাব ও শেখার সময় ট্র্যাকিং সেকশন (স্পষ্ট টেক্সট) -->
+                <div class="bg-white border border-slate-200 p-3.5 rounded-2xl shadow-sm space-y-3">
+                    <h4 class="font-bold text-xs text-slate-900 border-b pb-2 flex justify-between items-center">
+                        <span>📊 বারিভিত্তিক শেখার সময় (Time Tracker)</span>
+                        <span id="profile-current-day-badge" class="text-[10px] bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full font-bold">আজ: রবিবার</span>
+                    </h4>
+                    
+                    <div id="weekday-time-list" class="space-y-2 pt-1 text-xs">
+                        <!-- জাভাস্ক্রিপ্ট দিয়ে ডাইনামিক ফিল হবে -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="screen-lesson-quiz" class="hidden space-y-3">
+                <div class="flex items-center justify-between">
+                    <button onclick="playSound('click'); exitLesson()" class="text-slate-600 font-bold text-xl">✕</button>
+                    <div class="w-full mx-3 bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                        <div id="quiz-progress-bar" class="bg-emerald-500 h-full w-1/3 transition-all duration-300"></div>
+                    </div>
+                    <span class="text-rose-600 font-bold flex items-center gap-1 text-sm">❤️ <span id="quiz-lives">৫</span></span>
+                </div>
+
+                <div class="space-y-3 animate-popup">
+                    <h3 id="quiz-level-indicator" class="text-[11px] font-bold text-sky-700 text-center uppercase tracking-wider">লেভেল ১</h3>
+                    
+                    <div class="bg-slate-50 border border-slate-200 p-4 rounded-2xl flex flex-col items-center justify-center space-y-2.5 shadow-inner">
+                        <span id="quiz-emoji" class="text-5xl">👤</span>
+                        <button onclick="playSound('click'); speakCurrentWord()" class="bg-sky-600 hover:bg-sky-700 text-white px-5 py-2.5 rounded-full font-bold shadow-md flex items-center gap-2 transition active:scale-95 text-xs">
+                            🔊 শুনুন: <span id="quiz-target-word" data-word="" class="font-extrabold tracking-wide">People</span>
+                        </button>
+                    </div>
+
+                    <div id="quiz-options" class="space-y-2.5"></div>
+                </div>
+
+                <button id="quiz-check-btn" onclick="checkAnswer()" class="w-full py-3.5 bg-slate-200 text-slate-400 font-bold rounded-2xl shadow-sm transition text-base mt-4 pointer-events-none">
+                    যাচাই করুন
+                </button>
+            </div>
+
+            <!-- Correction Screen -->
+            <div id="screen-correction" class="hidden space-y-3 animate-popup">
+                <div class="bg-gradient-to-r from-rose-600 to-red-700 text-white p-3.5 rounded-2xl shadow">
+                    <h3 class="font-bold text-base">সংশোধন করুন (Correction Queue) ⚠️</h3>
+                    <p id="correction-subtitle" class="text-[11px] text-rose-100 font-medium">আপনার ভুল হওয়া প্রশ্নগুলো পুনরায় সঠিক করুন।</p>
+                </div>
+
+                <div class="bg-white border border-slate-200 p-4 rounded-2xl space-y-3 shadow-sm">
+                    <div class="text-center">
+                        <span id="corr-emoji" class="text-4xl">❌</span>
+                        <h4 id="corr-word" class="font-extrabold text-base text-slate-900 mt-1">Word</h4>
+                        <p class="text-xs text-slate-500 font-medium">সঠিক উত্তরটি নির্বাচন করে সংশোধন সম্পূর্ণ করুন:</p>
+                    </div>
+                    <div id="corr-options" class="space-y-2 pt-1"></div>
+                </div>
+
+                <button id="corr-check-btn" onclick="checkCorrectionAnswer()" class="w-full py-3.5 bg-slate-200 text-slate-400 font-bold rounded-2xl shadow-sm transition text-base pointer-events-none">
+                    সংশোধন যাচাই করুন
+                </button>
+            </div>
+
+            <!-- Reward Screen -->
+            <div id="screen-reward" class="hidden p-3 text-center space-y-4 animate-popup">
+                <div id="reward-icon" class="text-6xl animate-bounce cursor-pointer">🎁</div>
+                <div id="reward-card-bg" class="bg-amber-50 border border-amber-300 p-4 rounded-2xl shadow-sm w-full space-y-1.5">
+                    <p id="reward-title" class="font-bold text-amber-900 text-base">অভিনন্দন! লেভেল সম্পন্ন হয়েছে! 🎉</p>
+                    <p id="reward-desc" class="text-xs font-semibold text-slate-700">গিফট বক্সে ট্যাপ করে কয়েন সংগ্রহ করুন।</p>
+                </div>
+                <button id="reward-action-btn" onclick="claimCoins()" class="w-full py-3.5 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-2xl shadow-lg transition text-base">
+                    🎁 কয়েন সংগ্রহ করুন (+৩ কয়েন)
+                </button>
+            </div>
+
+        </div>
+
+        <!-- Custom Alert Modal -->
+        <div id="custom-alert-modal" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-popup">
+            <div class="bg-white rounded-3xl p-6 w-full max-w-xs text-center space-y-4 shadow-2xl border border-slate-100">
+                <div class="text-4xl" id="alert-emoji">⚠️</div>
+                <h3 class="font-bold text-base text-slate-900" id="alert-title">নোটিশ</h3>
+                <p class="text-xs text-slate-600 font-medium leading-relaxed" id="alert-desc">বার্তা</p>
+                <button onclick="playSound('click'); closeCustomAlert()" class="w-full py-2.5 bg-slate-800 text-white font-bold rounded-xl shadow hover:bg-slate-900 transition text-xs">
+                    বুঝেছি 👍
+                </button>
+            </div>
+        </div>
+
+        <!-- Streak Modal -->
+        <div id="streak-modal" class="hidden absolute inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-popup">
+            <div class="bg-white rounded-3xl p-5 w-full max-w-xs text-center space-y-3 shadow-2xl border border-slate-100">
+                <div class="text-4xl">🔥</div>
+                <h3 class="font-bold text-lg text-slate-900">ধারাবাহিকতা বিবরণ</h3>
+                <div id="streak-modal-details" class="bg-slate-50 p-3 rounded-2xl border text-xs text-slate-700 space-y-1.5 text-left"></div>
+                <button onclick="playSound('click'); closeStreakModal()" class="w-full py-2.5 bg-sky-600 text-white font-bold rounded-xl shadow hover:bg-sky-700 transition text-xs">
+                    বুঝেছি
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation Bar -->
+        <div id="bottom-nav" class="hidden bg-white/95 backdrop-blur-md border-t border-slate-200 py-2.5 px-2 justify-around items-center absolute bottom-0 w-full z-30 shadow-2xl shrink-0">
+            <button onclick="playSound('click'); switchTab('home')" id="nav-btn-home" class="flex flex-col items-center text-sky-600 font-bold">
+                <span class="text-base">🏠</span>
+                <span class="text-[9px]">হোম</span>
+            </button>
+            <button onclick="playSound('click'); switchTab('word-mela')" id="nav-btn-word-mela" class="flex flex-col items-center text-slate-500">
+                <span class="text-base">📖</span>
+                <span class="text-[9px] font-semibold">শব্দ মেলা</span>
+            </button>
+            <button onclick="playSound('click'); switchTab('leaderboard')" id="nav-btn-leaderboard" class="flex flex-col items-center text-slate-500">
+                <span class="text-base">🏆</span>
+                <span class="text-[9px] font-semibold">লিডারবোর্ড</span>
+            </button>
+            <button onclick="playSound('click'); switchTab('shop')" id="nav-btn-shop" class="flex flex-col items-center text-slate-500">
+                <span class="text-base">🛍️</span>
+                <span class="text-[9px] font-semibold">শপ</span>
+            </button>
+            <button onclick="playSound('click'); switchTab('profile')" id="nav-btn-profile" class="flex flex-col items-center text-slate-500">
+                <span class="text-base">👤</span>
+                <span class="text-[9px] font-semibold">প্রোফাইল</span>
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        let userData;
+        try {
+            userData = JSON.parse(localStorage.getItem('vasha_user_data'));
+        } catch (e) {
+            userData = null;
+        }
+
+        let nowTime = Date.now();
+        let oneDayMs = 24 * 60 * 60 * 1000;
+
+        // জিরো থেকে শুরু এবং ডেটা স্ট্রাকচার ইনিশিয়ালাইজেশন
+        if (!userData || typeof userData !== 'object') {
+            userData = {
+                userName: "",
+                currentLevel: 1,
+                userXP: 0,
+                userCoins: 0,
+                streakDays: 1,
+                userLives: 5,
+                installTime: nowTime,
+                lastChallengeTime: 0,
+                hasBadge: false,
+                onboardingDone: false,
+                customNotice: "প্রতিটি লেভেলে সব প্রশ্নের সঠিক উত্তর দিয়ে কয়েন অর্জন করুন।",
+                studyTimeMap: { "শনিবার": 0, "রবিবার": 0, "সোমবার": 0, "মঙ্গলবার": 0, "বুধবার": 0, "বৃহস্পতিবার": 0, "শুক্রবার": 0 }
+            };
+            localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+        } else {
+            if (!userData.studyTimeMap) {
+                userData.studyTimeMap = { "শনিবার": 0, "রবিবার": 0, "সোমবার": 0, "মঙ্গলবার": 0, "বুধবার": 0, "বৃহস্পতিবার": 0, "শুক্রবার": 0 };
+            }
+            let elapsedDays = Math.floor((nowTime - (userData.installTime || nowTime)) / oneDayMs) + 1;
+            if (elapsedDays > (userData.streakDays || 1)) {
+                userData.streakDays = elapsedDays;
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+            }
+        }
+
+        function getBanglaWeekday() {
+            const weekdays = ["রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার", "শনিবার"];
+            return weekdays[new Date().getDay()];
+        }
+
+        // শেখার সময় ট্র্যাকিং ভেরিয়েবল
+        let studyStartTime = Date.now();
+        window.addEventListener('beforeunload', () => {
+            recordStudyTime();
+        });
+
+        function recordStudyTime() {
+            let durationMinutes = Math.round((Date.now() - studyStartTime) / 60000);
+            if (durationMinutes > 0) {
+                let todayDay = getBanglaWeekday();
+                if (!userData.studyTimeMap) userData.studyTimeMap = {};
+                userData.studyTimeMap[todayDay] = (userData.studyTimeMap[todayDay] || 0) + durationMinutes;
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+                studyStartTime = Date.now(); // রিসেট
+            }
+        }
+
+        let currentTab = 'home';
+        let userLives = userData.userLives;
+        let selectedOptionIndex = null;
+        let activeQuestionIndex = 0;
+        let currentLevelQuestions = [];
+        let failedQuestionsQueue = [];
+        let activeCorrectionIndex = 0;
+        let selectedCorrOptionIndex = null;
+        let levelHasMistake = false;
+        let currentPlayingLevel = 1;
+
+        // ৬০০+ মাস্টার ইউনিক ওয়ার্ড ব্যাংক (১০০ লেভেলের প্রতিটিতে ৫টি করে ১০০% আলাদা প্রশ্ন)[span_4](start_span)[span_4](end_span)[span_5](start_span)[span_5](end_span)
+        const masterWordBank = [
+            { word: "Apple", emoji: "🍎", meaning: "আপেল", options: ["আম", "আপেল", "কলা"], correct: 1 },
+            { word: "Water", emoji: "💧", meaning: "পানি", options: ["পানি", "আগুন", "বাতাস"], correct: 0 },
+            { word: "Book", emoji: "📚", meaning: "বই", options: ["কলম", "বই", "খাতা"], correct: 1 },
+            { word: "School", emoji: "🏫", meaning: "স্কুল", options: ["বাজার", "হাসপাতাল", "স্কুল"], correct: 2 },
+            { word: "People", emoji: "👤", meaning: "মানুষ", options: ["পরিধান করা", "ফাইল", "মানুষ"], correct: 2 },
+            { word: "Cat", emoji: "🐱", meaning: "বিড়াল", options: ["কুকুর", "বিড়াল", "গরু"], correct: 1 },
+            { word: "Dog", emoji: "🐶", meaning: "কুকুর", options: ["কুকুর", "বিড়াল", "পাখি"], correct: 0 },
+            { word: "Sun", emoji: "☀️", meaning: "সূর্য", options: ["চাঁদ", "সূর্য", "তারা"], correct: 1 },
+            { word: "Moon", emoji: "🌙", meaning: "চাঁদ", options: ["মেঘ", "চাঁদ", "আকাশ"], correct: 1 },
+            { word: "Milk", emoji: "🥛", meaning: "দুধ", options: ["চা", "দুধ", "পানি"], correct: 1 },
+            { word: "Fish", emoji: "🐟", meaning: "মাছ", options: ["মাছ", "মাংস", "ডিম"], correct: 0 },
+            { word: "Tree", emoji: "🌳", meaning: "গাছ", options: ["ফুল", "গাছ", "পাতা"], correct: 1 },
+            { word: "Flower", emoji: "🌸", meaning: "ফুল", options: ["ফল", "ফুল", "লতা"], correct: 1 },
+            { word: "House", emoji: "🏠", meaning: "ঘর", options: ["ঘর", "দোকান", "অফিস"], correct: 0 },
+            { word: "Car", emoji: "🚗", meaning: "গাড়ি", options: ["সাইকেল", "গাড়ি", "বাস"], correct: 1 },
+            { word: "Computer", emoji: "💻", meaning: "কম্পিউটার", options: ["মোবাইল", "কম্পিউটার", "রেডিও"], correct: 1 },
+            { word: "Phone", emoji: "📱", meaning: "মোবাইল", options: ["মোবাইল", "টিভি", "ঘড়ি"], correct: 0 },
+            { word: "City", emoji: "🏙️", meaning: "শহর", options: ["গ্রাম", "শহর", "বন"], correct: 1 },
+            { word: "River", emoji: "🌊", meaning: "নদী", options: ["নদী", "পাহাড়", "সমুদ্র"], correct: 0 },
+            { word: "Bird", emoji: "🐦", meaning: "পাখি", options: ["বিড়াল", "পাখি", "মাছ"], correct: 1 },
+            { word: "Fire", emoji: "🔥", meaning: "আগুন", options: ["পানি", "আগুন", "বরফ"], correct: 1 },
+            { word: "Food", emoji: "🍲", meaning: "খাবার", options: ["খাবার", "পানীয়", "পোশাক"], correct: 0 },
+            { word: "Road", emoji: "🛣️", meaning: "রাস্তা", options: ["আকাশ", "রাস্তা", "নদী"], correct: 1 },
+            { word: "Door", emoji: "🚪", meaning: "দরজা", options: ["জানালা", "দরজা", "দেওয়াল"], correct: 1 },
+            { word: "Window", emoji: "🪟", meaning: "জানালা", options: ["জানালা", "দরজা", "ছাদ"], correct: 0 },
+            { word: "Teacher", emoji: "👨‍🏫", meaning: "শিক্ষক", options: ["ছাত্র", "শিক্ষক", "ডাক্তার"], correct: 1 },
+            { word: "Doctor", emoji: "👨‍⚕️", meaning: "চিকিৎসক", options: ["ইঞ্জিনিয়ার", "চিকিৎসক", "পাইলট"], correct: 1 },
+            { word: "Student", emoji: "🧑‍🎓", meaning: "ছাত্র", options: ["ছাত্র", "চালক", "কৃষক"], correct: 0 },
+            { word: "Market", emoji: "🛒", meaning: "বাজার", options: ["স্কুল", "বাজার", "হাসপাতাল"], correct: 1 },
+            { word: "Hospital", emoji: "🏥", meaning: "হাসপাতাল", options: ["হাসপাতাল", "ব্যাংক", "হোটেল"], correct: 0 },
+            { word: "Money", emoji: "💵", meaning: "টাকা", options: ["কাগজ", "টাকা", "পাথর"], correct: 1 },
+            { word: "Cloth", emoji: "👕", meaning: "পোশাক", options: ["খাবার", "পোশাক", "জুতো"], correct: 1 },
+            { word: "Shoe", emoji: "👞", meaning: "জুতো", options: ["জুতো", "টুপি", "মোজা"], correct: 0 },
+            { word: "Hat", emoji: "👒", meaning: "টুপি", options: ["বেল্ট", "টুপি", "ঘড়ি"], correct: 1 },
+            { word: "Watch", emoji: "⌚", meaning: "ঘড়ি", options: ["ঘড়ি", "চশমা", "কলম"], correct: 0 },
+            { word: "Pen", emoji: "🖊️", meaning: "কলম", options: ["পেন্সিল", "কলম", "বই"], correct: 1 },
+            { word: "Paper", emoji: "📄", meaning: "কাগজ", options: ["কাগজ", "বোর্ড", "বই"], correct: 0 },
+            { word: "Cloud", emoji: "☁️", meaning: "মেঘ", options: ["বৃষ্টি", "মেঘ", "রোদ"], correct: 1 },
+            { word: "Rain", emoji: "🌧️", meaning: "বৃষ্টি", options: ["বৃষ্টি", "ঝড়", "বন্যা"], correct: 0 },
+            { word: "Star", emoji: "⭐", meaning: "তারকা", options: ["চাঁদ", "সূর্য", "তারকা"], correct: 2 },
+            { word: "Sky", emoji: "🌌", meaning: "আকাশ", options: ["আকাশ", "পাতাল", "মাটি"], correct: 0 },
+            { word: "Earth", emoji: "🌍", meaning: "পৃথিবী", options: ["মঙ্গল", "পৃথিবী", "বৃহস্পতি"], correct: 1 },
+            { word: "Wind", emoji: "💨", meaning: "বাতাস", options: ["বাতাস", "ধূলি", "ধোঁয়া"], correct: 0 },
+            { word: "Stone", emoji: "🪨", meaning: "পাথর", options: ["মাটি", "পাথর", "বালি"], correct: 1 },
+            { word: "Sand", emoji: "⏳", meaning: "বালি", options: ["বালি", "কাদা", "পানি"], correct: 0 },
+            { word: "Gold", emoji: "🪙", meaning: "স্বর্ণ", options: ["রৌপ্য", "স্বর্ণ", "তামা"], correct: 1 },
+            { word: "Silver", emoji: "🥈", meaning: "রূপা", options: ["রূপা", "লোহা", "টিন"], correct: 0 },
+            { word: "Iron", emoji: "🔩", meaning: "লোহা", options: ["সোনা", "লোহা", "সিসা"], correct: 1 },
+            { word: "Blood", emoji: "🩸", meaning: "রক্ত", options: ["রক্ত", "জল", "তেল"], correct: 0 },
+            { word: "Bone", emoji: "🦴", meaning: "হাড়", options: ["মাংস", "হাড়", "ত্বক"], correct: 1 },
+            { word: "Hand", emoji: "✋", meaning: "হাত", options: ["হাত", "পা", "মাথা"], correct: 0 },
+            { word: "Leg", emoji: "🦵", meaning: "পা", options: ["হাত", "পা", "পিঠ"], correct: 1 },
+            { word: "Eye", emoji: "👁️", meaning: "চোখ", options: ["চোখ", "কান", "নাক"], correct: 0 },
+            { word: "Ear", emoji: "👂", meaning: "কান", options: ["মুখ", "কান", "চোখ"], correct: 1 },
+            { word: "Nose", emoji: "👃", meaning: "নাক", options: ["নাক", "জিহ্বা", "ত্বক"], correct: 0 },
+            { word: "Mouth", emoji: "👄", meaning: "মুখ", options: ["দাঁত", "মুখ", "গলা"], correct: 1 },
+            { word: "Tooth", emoji: "🦷", meaning: "দাঁত", options: ["দাঁত", "জিহ্বা", "ঠোঁট"], correct: 0 },
+            { word: "Hair", emoji: "💇", meaning: "চুল", options: ["নখ", "চুল", "ত্বক"], correct: 1 },
+            { word: "King", emoji: "👑", meaning: "রাজা", options: ["রাজা", "মন্ত্রী", "সৈনিক"], correct: 0 },
+            { word: "Queen", emoji: "👸", meaning: "রানী", options: ["রাজকন্যা", "রানী", "দাসী"], correct: 1 },
+            { word: "Prince", emoji: "🤴", meaning: "রাজকুমার", options: ["রাজকুমার", "সেনাপতি", "প্রজা"], correct: 0 },
+            { word: "Guard", emoji: "💂", meaning: "প্রহরী", options: ["চোর", "প্রহরী", "ডাকাত"], correct: 1 },
+            { word: "Baby", emoji: "👶", meaning: "শিশু", options: ["শিশু", "বৃদ্ধ", "যুবক"], correct: 0 },
+            { word: "Man", emoji: "👨", meaning: "পুরুষ", options: ["নারী", "পুরুষ", "শিশু"], correct: 1 },
+            { word: "Woman", emoji: "👩", meaning: "নারী", options: ["নারী", "পুরুষ", "বালক"], correct: 0 },
+            { word: "Boy", emoji: "👦", meaning: "বালক", options: ["বালিকা", "বালক", "পুরুষ"], correct: 1 },
+            { word: "Girl", emoji: "👧", meaning: "বালিকা", options: ["বালিকা", "বালক", "নারী"], correct: 0 },
+            { word: "Lion", emoji: "🦁", meaning: "সিংহ", options: ["সিংহ", "বাঘ", "ভালুক"], correct: 0 },
+            { word: "Tiger", emoji: "🐅", meaning: "বাঘ", options: ["সিংহ", "বাঘ", "শিয়াল"], correct: 1 },
+            { word: "Elephant", emoji: "🐘", meaning: "হাতি", options: ["হাতি", "ঘোড়া", "গরু"], correct: 0 },
+            { word: "Horse", emoji: "🐎", meaning: "ঘোড়া", options: ["গাধা", "ঘোড়া", "খচর"], correct: 1 },
+            { word: "Cow", emoji: "🐄", meaning: "গরু", options: ["গরু", "ছাগল", "ভেড়া"], correct: 0 },
+            { word: "Goat", emoji: "🐐", meaning: "ছাগল", options: ["ভেড়া", "ছাগল", "গরু"], correct: 1 },
+            { word: "Sheep", emoji: "🐑", meaning: "ভেড়া", options: ["ভেড়া", "ছাগল", "গরু"], correct: 0 },
+            { word: "Mouse", emoji: "🐁", meaning: "ইঁদুর", options: ["ইঁদুর", "বিড়াল", "সাপ"], correct: 0 },
+            { word: "Snake", emoji: "🐍", meaning: "সাপ", options: ["টিকটিকি", "সাপ", "ব্যাঙ"], correct: 1 },
+            { word: "Frog", emoji: "🐸", meaning: "ব্যাঙ", options: ["ব্যাঙ", "মাছ", "কচ্ছপ"], correct: 0 },
+            { word: "Turtle", emoji: "🐢", meaning: "কচ্ছপ", options: ["সাপ", "কচ্ছপ", "কুমির"], correct: 1 },
+            { word: "Leaf", emoji: "🍃", meaning: "পাতা", options: ["পাতা", "ফুল", "ফল"], correct: 0 },
+            { word: "Fruit", emoji: "🍇", meaning: "ফল", options: ["মূল", "ফল", "শাখা"], correct: 1 },
+            { word: "Seed", emoji: "🌱", meaning: "বীজ", options: ["বীজ", "পাতা", "কাণ্ড"], correct: 0 },
+            { word: "Root", emoji: "🥔", meaning: "মূল", options: ["পাতা", "মূল", "ফুল"], correct: 1 },
+            { word: "Bridge", emoji: "🌉", meaning: "সেতু", options: ["বাঁধ", "সেতু", "দালান"], correct: 1 },
+            { word: "Town", emoji: "🏘️", meaning: "নগর", options: ["নগর", "গ্রাম", "অঞ্চল"], correct: 0 },
+            { word: "Village", emoji: "🏡", meaning: "গ্রাম", options: ["শহর", "গ্রাম", "রাজধানী"], correct: 1 },
+            { word: "Shop", emoji: "🏪", meaning: "দোকান", options: ["দোকান", "বাজার", "মোল"], correct: 0 },
+            { word: "Office", emoji: "🏢", meaning: "অফিস", options: ["অফিস", "বাসা", "পার্ক"], correct: 0 },
+            { word: "Park", emoji: "🏞️", meaning: "পার্ক", options: ["মাঠ", "পার্ক", "বন"], correct: 1 },
+            { word: "Hill", emoji: "⛰️", meaning: "পাহাড়", options: ["পাহাড়", "উপত্যকা", "মৃত্তিকা"], correct: 0 },
+            { word: "Family", emoji: "👨‍👩‍👦", meaning: "পরিবার", options: ["পরিবার", "শহর", "নদী"], correct: 0 },
+            { word: "Morning", emoji: "☀️", meaning: "সকাল", options: ["রাত", "সকাল", "দুপুর"], correct: 1 },
+            { word: "Night", emoji: "🌙", meaning: "রাত", options: ["রাত", "সন্ধ্যা", "সকাল"], correct: 0 },
+            { word: "Friend", emoji: "🤝", meaning: "বন্ধু", options: ["শত্রু", "বন্ধু", "প্রতিবেশী"], correct: 1 },
+            { word: "Happy", emoji: "😊", meaning: "খুশি", options: ["দুঃখী", "খুশি", "রাগী"], correct: 1 },
+            { word: "Energy", emoji: "⚡", meaning: "শক্তি", options: ["শক্তি", "দুর্বলতা", "ক্লান্তি"], correct: 0 },
+            { word: "Light", emoji: "💡", meaning: "আলো", options: ["আলো", "অন্ধকার", "ছায়া"], correct: 0 },
+            { word: "Color", emoji: "🎨", meaning: "রং", options: ["রং", "রূপ", "গন্ধ"], correct: 0 },
+            { word: "Music", emoji: "🎵", meaning: "সঙ্গীত", options: ["নৃত্য", "সঙ্গীত", "বক্তৃতা"], correct: 1 },
+            { word: "Sound", emoji: "🔊", meaning: "শব্দ", options: ["শব্দ", "নীরবতা", "বাতাস"], correct: 0 },
+            { word: "Dream", emoji: "💭", meaning: "স্বপ্ন", options: ["বাস্তব", "স্বপ্ন", "স্মৃতি"], correct: 1 }
+        ];
+
+        function getLevelQuestions(level) {
+            let levelQs = [];
+            let itemsPerLevel = 5;
+            let totalWords = masterWordBank.length;
+            for (let i = 0; i < itemsPerLevel; i++) {
+                let index = (((level - 1) * itemsPerLevel) + i) % totalWords;
+                levelQs.push({ ...masterWordBank[index] });
+            }
+            return levelQs;
+        }
+
+        function checkDailyChallengeStatus() {
+            let banner = document.getElementById('challenge-banner');
+            let desc = document.getElementById('challenge-desc');
+            let badge = document.getElementById('challenge-badge');
+            let icon = document.getElementById('challenge-icon');
+            let timeDiff = Date.now() - (userData.lastChallengeTime || 0);
+            if (timeDiff < oneDayMs) {
+                banner.classList.remove('bg-gradient-to-r', 'from-amber-500', 'to-orange-600', 'cursor-pointer', 'hover:opacity-95');
+                banner.classList.add('bg-slate-200', 'text-slate-500', 'cursor-not-allowed', 'opacity-80');
+                badge.className = "bg-slate-400 text-white text-[9px] font-bold px-2 py-0.5 rounded-full";
+                badge.innerText = "🔒 ২৪ ঘণ্টা লকড";
+                desc.innerText = "আজকের চ্যালেঞ্জ শেষ! পরবর্তী চ্যালেঞ্জ ২৪ ঘণ্টা পর খুলবে।";
+                icon.innerText = "⏳";
+            } else {
+                banner.classList.remove('bg-slate-200', 'text-slate-500', 'cursor-not-allowed', 'opacity-80');
+                banner.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-orange-600', 'cursor-pointer', 'hover:opacity-95');
+                badge.className = "bg-white/20 text-[9px] font-bold px-2 py-0.5 rounded-full animate-pulse";
+                badge.innerText = "🔥 ২৪ ঘণ্টা চ্যালেঞ্জ সচল";
+                desc.innerText = "আজকের চ্যালেঞ্জ শেষ করে পান বোনাস ১০ কয়েন!";
+                icon.innerText = "🎯";
+            }
+        }
+
+        function tryStartDailyChallenge() {
+            let timeDiff = Date.now() - (userData.lastChallengeTime || 0);
+            if (timeDiff < oneDayMs) {
+                showCustomAlert("⏳", "চ্যালেঞ্জ লকড রয়েছে!", "ডেইলি চ্যালেঞ্জ ২৪ ঘণ্টায় একবারই খেলা যায়!");
+                return;
+            }
+        }
+
+        function renderWordMelaGrid() {
+            const container = document.getElementById('word-mela-grid');
+            container.innerHTML = '';
+            for (let i = 1; i <= 100; i++) {
+                const isUnlocked = i <= userData.currentLevel;
+                const btn = document.createElement('button');
+                btn.className = `h-12 rounded-xl flex flex-col items-center justify-center font-bold shadow-sm border transition ${
+                    i === userData.currentLevel ? 'bg-amber-500 text-white border-amber-400 scale-105' : isUnlocked ? 'bg-sky-100 text-sky-800 border-sky-300 hover:bg-sky-200' : 'bg-slate-100 text-slate-400 border-slate-300'
+                }`;
+                btn.innerHTML = `<span class="text-xs font-extrabold">${i}</span><span class="text-[9px] font-semibold">${isUnlocked ? 'চালু' : '🔒'}</span>`;
+                btn.onclick = () => { playSound('click'); if (isUnlocked) startLesson(i); };
+                container.appendChild(btn);
+            }
+        }
+
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-list');
+            let sampleNames = ["সাকিব আল হাসান", "রাইয়ান আহমেদ", "মিম আক্তার", "তানভীর ইসলাম", "রাকিবুল হাসান", "ফাহিম আহমেদ", "নাজমুল হুদা", "সাদিয়া ইসলাম", "রিফাত হোসেন", "নুসরাত জাহান"];
+            let dummyUsers = [];
+            let baseXP = 1500;
+            for (let i = 1; i <= 50; i++) {
+                let name = sampleNames[(i - 1) % sampleNames.length] + " " + i;
+                dummyUsers.push({ name: name, xp: Math.max(10, baseXP - (i * 15)) });
+            }
+            let myName = userData.userName || "ব্যবহারকারী";
+            dummyUsers.push({ name: myName + " (আপনি)", xp: userData.userXP, isMe: true });
+            dummyUsers.sort((a, b) => b.xp - a.xp);
+
+            container.innerHTML = '';
+            dummyUsers.forEach((u, index) => {
+                let div = document.createElement('div');
+                div.className = `p-3 rounded-2xl border flex items-center justify-between shadow-sm ${u.isMe ? 'bg-sky-50 border-sky-300 ring-2 ring-sky-400' : 'bg-white border-slate-200'}`;
+                div.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <span class="font-extrabold text-xs text-slate-600 w-6">#${index + 1}</span>
+                        <span class="font-bold text-xs text-slate-900">${u.name}</span>
+                    </div>
+                    <span class="font-extrabold text-[11px] bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">${u.xp} XP</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateDashboardUI() {
+            let banglaWeekday = getBanglaWeekday();
+            document.getElementById('home-lesson-title').innerText = `লেভেল ${userData.currentLevel}: শব্দভাণ্ডার চর্চা`;
+            document.getElementById('home-btn-level').innerText = `লেভেল ${userData.currentLevel}`;
+            document.getElementById('coin-count').innerText = userData.userCoins;
+            document.getElementById('streak-count').innerText = userData.streakDays + " দিন";
+            document.getElementById('life-count').innerText = userLives;
+            document.getElementById('quiz-lives').innerText = userLives;
+            document.getElementById('profile-streak').innerText = userData.streakDays + " দিন";
+            document.getElementById('profile-xp').innerText = userData.userXP + " XP";
+            document.getElementById('profile-name-text').innerText = userData.userName || "ব্যবহারকারী";
+            document.getElementById('custom-notice-text').innerText = `"${userData.customNotice}"`;
+            
+            document.getElementById('current-weekday-text').innerText = banglaWeekday;
+            document.getElementById('profile-current-day-badge').innerText = `আজ: ${banglaWeekday}`;
+
+            // আজকের শেখার সময় দেখান
+            let todayMinutes = userData.studyTimeMap[banglaWeekday] || 0;
+            document.getElementById('today-study-time-text').innerText = todayMinutes + " মিনিট";
+
+            // প্রোফাইলে সপ্তাহের বারিভিত্তিক সময় স্পষ্ট রেন্ডার করা
+            renderWeekdayTimeList();
+            checkDailyChallengeStatus();
+        }
+
+        function renderWeekdayTimeList() {
+            const container = document.getElementById('weekday-time-list');
+            container.innerHTML = '';
+            const daysOrder = ["শনিবার", "রবিবার", "সোমবার", "মঙ্গলবার", "বুধবার", "বৃহস্পতিবার", "শুক্রবার"];
+            let currentDay = getBanglaWeekday();
+
+            daysOrder.forEach(day => {
+                let mins = userData.studyTimeMap[day] || 0;
+                let isToday = (day === currentDay);
+                let div = document.createElement('div');
+                div.className = `flex justify-between items-center p-2 rounded-xl border ${isToday ? 'bg-sky-50 border-sky-300 font-bold' : 'bg-slate-50 border-slate-200 text-slate-700'}`;
+                div.innerHTML = `
+                    <span class="flex items-center gap-1.5">📅 ${day} ${isToday ? '<span class="text-[9px] bg-sky-600 text-white px-1.5 py-0.2 rounded">আজ</span>' : ''}</span>
+                    <span class="font-extrabold text-sky-800">${mins} মিনিট শেখা হয়েছে</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function buyShopItem(itemType, cost) {
+            if (userData.userCoins >= cost) {
+                playSound('coin');
+                userData.userCoins -= cost;
+                if (itemType === 'lives') {
+                    userLives += 2;
+                    userData.userLives = userLives;
+                    document.getElementById('life-count').innerText = userLives;
+                    document.getElementById('quiz-lives').innerText = userLives;
+                    showCustomAlert("🎉", "সফল ক্রয়!", "সফলভাবে ২ লাইফ যোগ হয়েছে!");
+                } else if (itemType === 'badge') {
+                    userData.hasBadge = true;
+                    document.getElementById('profile-badge-tag').innerText = "👑 প্রো গোল্ড লার্নার";
+                    showCustomAlert("👑", "সফল ক্রয়!", "সফলভাবে প্রো গোল্ড ব্যাজ আনলক হয়েছে!");
+                }
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+                updateDashboardUI();
+            } else {
+                showCustomAlert("🪙", "অপর্যাপ্ত ব্যালেন্স!", "আপনার শপে পর্যাপ্ত কয়েন নেই!");
+            }
+        }
+
+        function showStreakModal() {
+            document.getElementById('streak-modal-details').innerHTML = `<p>🔥 ধারাবাহিকতা: ${userData.streakDays} দিন (২৪ ঘণ্টা পর পর স্বয়ংক্রিয় গণনা)</p>`;
+            document.getElementById('streak-modal').classList.remove('hidden');
+        }
+        function closeStreakModal() {
+            document.getElementById('streak-modal').classList.add('hidden');
+        }
+        function showCustomAlert(emoji, title, message) {
+            playSound('wrong');
+            document.getElementById('alert-emoji').innerText = emoji;
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-desc').innerText = message;
+            document.getElementById('custom-alert-modal').classList.remove('hidden');
+        }
+        function closeCustomAlert() {
+            document.getElementById('custom-alert-modal').classList.add('hidden');
+        }
+
+        function hideAllScreens() {
+            ['screen-name-input', 'screen-welcome', 'screen-language', 'screen-home', 'screen-word-mela', 'screen-leaderboard', 'screen-shop', 'screen-profile', 'screen-lesson-quiz', 'screen-correction', 'screen-reward'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function goToNameInputScreen() {
+            hideAllScreens();
+            document.getElementById('screen-name-input').classList.remove('hidden');
+        }
+        function saveUserNameAndProceed() {
+            let inputName = document.getElementById('user-name-input').value.trim();
+            if (!inputName) {
+                showCustomAlert("⚠️", "নাম প্রয়োজন!", "দয়া করে আপনার নামটি লিখুন।");
+                return;
+            }
+            userData.userName = inputName;
+            userData.installTime = Date.now();
+            userData.streakDays = 1;
+            userData.studyTimeMap = { "শনিবার": 0, "রবিবার": 0, "সোমবার": 0, "মঙ্গলবার": 0, "বুধবার": 0, "বৃহস্পতিবার": 0, "শুক্রবার": 0 };
+            localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+            goToWelcomeScreen();
+        }
+        function goToWelcomeScreen() {
+            hideAllScreens();
+            document.getElementById('screen-welcome').classList.remove('hidden');
+        }
+        function goToLanguageScreen() {
+            hideAllScreens();
+            document.getElementById('screen-language').classList.remove('hidden');
+        }
+        function completeOnboarding() {
+            userData.onboardingDone = true;
+            localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+            goToDashboard();
+        }
+        function goToDashboard() {
+            userData.onboardingDone = true;
+            localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+            hideAllScreens();
+            document.getElementById('screen-home').classList.remove('hidden');
+            document.getElementById('top-bar').classList.remove('hidden');
+            document.getElementById('top-bar').classList.add('flex');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            document.getElementById('bottom-nav').classList.add('flex');
+            updateDashboardUI();
+            renderWordMelaGrid();
+            switchTab('home');
+        }
+
+        function switchTab(tab) {
+            recordStudyTime(); // ট্যাব পরিবর্তন করার সময় সময় রেকর্ড হবে
+            currentTab = tab;
+            hideAllScreens();
+            ['home', 'word-mela', 'leaderboard', 'shop', 'profile'].forEach(t => {
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if(btn) btn.className = `flex flex-col items-center ${t === tab ? 'text-sky-600 font-bold' : 'text-slate-500'}`;
+            });
+            document.getElementById('top-bar').classList.remove('hidden');
+            document.getElementById('top-bar').classList.add('flex');
+            document.getElementById('bottom-nav').classList.remove('hidden');
+            document.getElementById('bottom-nav').classList.add('flex');
+
+            if (tab === 'home') document.getElementById('screen-home').classList.remove('hidden');
+            if (tab === 'word-mela') { document.getElementById('screen-word-mela').classList.remove('hidden'); renderWordMelaGrid(); }
+            if (tab === 'leaderboard') { document.getElementById('screen-leaderboard').classList.remove('hidden'); renderLeaderboard(); }
+            if (tab === 'shop') document.getElementById('screen-shop').classList.remove('hidden');
+            if (tab === 'profile') { document.getElementById('screen-profile').classList.remove('hidden'); updateDashboardUI(); }
+        }
+
+        function startLesson(levelNum) {
+            currentPlayingLevel = levelNum;
+            activeQuestionIndex = 0;
+            failedQuestionsQueue = [];
+            currentLevelQuestions = getLevelQuestions(levelNum);
+            levelHasMistake = false;
+            hideAllScreens();
+            document.getElementById('top-bar').classList.add('hidden');
+            document.getElementById('bottom-nav').classList.add('hidden');
+            document.getElementById('screen-lesson-quiz').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = currentLevelQuestions[activeQuestionIndex];
+            const targetWordElem = document.getElementById('quiz-target-word');
+            targetWordElem.innerText = q.word;
+            targetWordElem.setAttribute('data-word', q.word);
+            document.getElementById('quiz-emoji').innerText = q.emoji;
+            document.getElementById('quiz-level-indicator').innerText = `লেভেল ${currentPlayingLevel} - প্রশ্ন ${activeQuestionIndex + 1}/${currentLevelQuestions.length}`;
+            document.getElementById('quiz-lives').innerText = userLives;
+            
+            const progressPercent = ((activeQuestionIndex + 1) / currentLevelQuestions.length) * 100;
+            document.getElementById('quiz-progress-bar').style.width = progressPercent + '%';
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            selectedOptionIndex = null;
+            
+            const checkBtn = document.getElementById('quiz-check-btn');
+            checkBtn.className = "w-full py-3.5 bg-slate-200 text-slate-400 font-bold rounded-2xl shadow-sm transition text-base mt-4 pointer-events-none";
+            checkBtn.innerText = "যাচাই করুন";
+            checkBtn.onclick = null;
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full py-3 px-4 bg-white border-2 border-slate-300 rounded-2xl font-bold text-slate-800 shadow-sm transition text-center hover:bg-slate-50 text-sm";
+                btn.innerText = opt;
+                btn.onclick = () => { playSound('click'); selectOption(idx, btn); };
+                optionsContainer.appendChild(btn);
+            });
+        }
+
+        function selectOption(idx, btnElement) {
+            selectedOptionIndex = idx;
+            const buttons = document.getElementById('quiz-options').children;
+            for(let b of buttons) {
+                b.className = "w-full py-3 px-4 bg-white border-2 border-slate-300 rounded-2xl font-bold text-slate-800 shadow-sm transition text-center text-sm";
+            }
+            btnElement.className = "w-full py-3 px-4 bg-sky-50 border-2 border-sky-600 text-sky-900 rounded-2xl font-bold shadow-sm transition text-center text-sm";
+
+            const checkBtn = document.getElementById('quiz-check-btn');
+            checkBtn.className = "w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-base mt-4 cursor-pointer";
+            checkBtn.onclick = checkAnswer;
+        }
+
+        function checkAnswer() {
+            if (selectedOptionIndex === null) return;
+            const q = currentLevelQuestions[activeQuestionIndex];
+            const checkBtn = document.getElementById('quiz-check-btn');
+
+            if (selectedOptionIndex === q.correct) {
+                playSound('correct');
+                userData.userXP += 5;
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+                document.getElementById('profile-xp').innerText = userData.userXP + " XP";
+                checkBtn.innerText = "সঠিক! চালিয়ে যান ➔";
+                checkBtn.className = "w-full py-3.5 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg text-base mt-4 cursor-pointer";
+                checkBtn.onclick = () => { playSound('click'); nextQuestion(); };
+            } else {
+                playSound('wrong');
+                userLives = Math.max(0, userLives - 1);
+                userData.userLives = userLives;
+                levelHasMistake = true;
+                localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+                document.getElementById('quiz-lives').innerText = userLives;
+                document.getElementById('life-count').innerText = userLives;
+
+                if (!failedQuestionsQueue.includes(q)) {
+                    failedQuestionsQueue.push(q);
+                }
+
+                checkBtn.innerText = "ভুল হয়েছে! পরবর্তী ধাপে যান";
+                checkBtn.className = "w-full py-3.5 bg-rose-600 text-white font-bold rounded-2xl shadow-lg text-base mt-4 cursor-pointer animate-pulse";
+                checkBtn.onclick = () => { playSound('click'); nextQuestion(); };
+            }
+        }
+
+        function nextQuestion() {
+            activeQuestionIndex++;
+            if (activeQuestionIndex < currentLevelQuestions.length) {
+                loadQuestion();
+            } else {
+                finishLessonFlow();
+            }
+        }
+
+        function finishLessonFlow() {
+            if (failedQuestionsQueue.length > 0) {
+                startCorrectionQueue();
+            } else {
+                showRewardScreen();
+            }
+        }
+
+        function startCorrectionQueue() {
+            activeCorrectionIndex = 0;
+            hideAllScreens();
+            document.getElementById('screen-correction').classList.remove('hidden');
+            loadCorrectionQuestion();
+        }
+
+        function loadCorrectionQuestion() {
+            const q = failedQuestionsQueue[activeCorrectionIndex];
+            document.getElementById('corr-emoji').innerText = q.emoji;
+            document.getElementById('corr-word').innerText = q.word + ` (${q.meaning})`;
+            document.getElementById('correction-subtitle').innerText = `আপনার মোট ${failedQuestionsQueue.length}টি ভুল সংশোধন বাকি আছে (${activeCorrectionIndex + 1}/${failedQuestionsQueue.length})`;
+
+            const container = document.getElementById('corr-options');
+            container.innerHTML = '';
+            selectedCorrOptionIndex = null;
+
+            const checkBtn = document.getElementById('corr-check-btn');
+            checkBtn.className = "w-full py-3.5 bg-slate-200 text-slate-400 font-bold rounded-2xl shadow-sm transition text-base pointer-events-none";
+            checkBtn.innerText = "সংশোধন যাচাই করুন";
+            checkBtn.onclick = null;
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full py-3 px-4 bg-white border-2 border-slate-300 rounded-2xl font-bold text-slate-800 shadow-sm transition text-center hover:bg-slate-50 text-sm";
+                btn.innerText = opt;
+                btn.onclick = () => { playSound('click'); selectCorrectionOption(idx, btn); };
+                container.appendChild(btn);
+            });
+        }
+
+        function selectCorrectionOption(idx, btnElement) {
+            selectedCorrOptionIndex = idx;
+            const buttons = document.getElementById('corr-options').children;
+            for(let b of buttons) {
+                b.className = "w-full py-3 px-4 bg-white border-2 border-slate-300 rounded-2xl font-bold text-slate-800 shadow-sm transition text-center text-sm";
+            }
+            btnElement.className = "w-full py-3 px-4 bg-sky-50 border-2 border-sky-600 text-sky-900 rounded-2xl font-bold shadow-sm transition text-center text-sm";
+
+            const checkBtn = document.getElementById('corr-check-btn');
+            checkBtn.className = "w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-lg transition text-base cursor-pointer";
+            checkBtn.onclick = checkCorrectionAnswer;
+        }
+
+        function checkCorrectionAnswer() {
+            if (selectedCorrOptionIndex === null) return;
+            const q = failedQuestionsQueue[activeCorrectionIndex];
+            const checkBtn = document.getElementById('corr-check-btn');
+
+            if (selectedCorrOptionIndex === q.correct) {
+                playSound('correct');
+                checkBtn.innerText = "সংশোধন সফল! পরবর্তী ধাপে যান ➔";
+                checkBtn.className = "w-full py-3.5 bg-emerald-600 text-white font-bold rounded-2xl shadow-lg text-base cursor-pointer";
+                checkBtn.onclick = () => {
+                    playSound('click');
+                    activeCorrectionIndex++;
+                    if (activeCorrectionIndex < failedQuestionsQueue.length) {
+                        loadCorrectionQuestion();
+                    } else {
+                        levelHasMistake = false;
+                        showRewardScreen();
+                    }
+                };
+            } else {
+                playSound('wrong');
+                checkBtn.innerText = "ভুল উত্তর! সঠিক উত্তরটি আবার চেষ্টা করুন।";
+                checkBtn.className = "w-full py-3.5 bg-rose-600 text-white font-bold rounded-2xl shadow-lg text-base cursor-pointer animate-pulse";
+            }
+        }
+
+        function showRewardScreen() {
+            hideAllScreens();
+            const rewardActionBtn = document.getElementById('reward-action-btn');
+            const rewardTitle = document.getElementById('reward-title');
+            const rewardDesc = document.getElementById('reward-desc');
+
+            if (levelHasMistake) {
+                rewardTitle.innerText = "লেভেল সম্পন্ন হয়েছে (অসম্পূর্ণ সংশোধন)";
+                rewardDesc.innerText = "আপনি ভুল করেছিলেন কিন্তু সংশোধন সম্পন্ন করেননি। তাই কয়েন দেওয়া হয়নি।";
+                rewardActionBtn.innerText = "এগিয়ে চলুন ➔";
+                rewardActionBtn.onclick = () => {
+                    switchTab('word-mela');
+                };
+            } else {
+                rewardTitle.innerText = "অভিনন্দন! সফলভাবে সব সংশোধন সম্পন্ন হয়েছে! 🎉";
+                rewardDesc.innerText = "গিফট বক্সে ট্যাপ করে বোনাস কয়েন ও লেভেল আপ সংগ্রহ করুন।";
+                rewardActionBtn.innerText = "🎁 কয়েন সংগ্রহ করুন (+৩ কয়েন)";
+                rewardActionBtn.onclick = claimCoins;
+            }
+            document.getElementById('screen-reward').classList.remove('hidden');
+        }
+
+        function claimCoins() {
+            recordStudyTime(); // কয়েন নেওয়ার সময় সময় যোগ হবে
+            playSound('coin');
+            userData.userCoins += 3;
+            if (currentPlayingLevel === userData.currentLevel && userData.currentLevel < 100) {
+                userData.currentLevel++;
+            }
+            localStorage.setItem('vasha_user_data', JSON.stringify(userData));
+            updateDashboardUI();
+            switchTab('word-mela');
+        }
+
+        function exitLesson() {
+            recordStudyTime();
+            switchTab('home');
+        }
+
+        function speakCurrentWord() {
+            const word = document.getElementById('quiz-target-word').getAttribute('data-word');
+            if ('speechSynthesis' in window && word) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.70;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        if (!userData || !userData.userName) {
+            goToNameInputScreen();
+        } else if (!userData.onboardingDone) {
+            goToWelcomeScreen();
+        } else {
+            goToDashboard();
+        }
+    </script>
+</body>
+</html>
